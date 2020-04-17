@@ -1,0 +1,190 @@
+{extend name="adminblue/base" /}
+{block name="resources"/}
+<link rel="stylesheet" type="text/css" href="ADMIN_CSS/product.css">
+<script type="text/javascript" src="__STATIC__/My97DatePicker/WdatePicker.js"></script>
+<style>
+    .x360_table{width: 100%;min-height: 300px;}
+    .x360_table table {width:100%;margin:15px 0;border:0;}
+    .x360_table th {background-color:#d9edf7;color:#3a87ad;font-weight: normal;}
+    .x360_table,.x360_table th,.x360_table td {font-size:0.95em;text-align:center;padding:4px;border-collapse:collapse;}
+    .x360_table tr td{padding:10px 4px;}
+    .x360_table tr:nth-child(odd){background-color:#ececec;}
+    .x360_table tr:nth-child(even){background-color:#fdfdfd;}
+    .card_no{position: relative;}
+    .card_no input{margin-bottom: 0;display: inline-block;border-radius:0; }
+    .card_no a.copy{display:inline-block;width:60px;height: 31px;text-align: center;line-height: 30px;background-color:#0072D2;color:#fff;}
+</style>
+{/block}
+{block name="main"}
+
+<div style="padding: 10px 0;width: 100%;">
+    <div style="display: inline-block;float: left;margin-left: 10px;">
+        <button class="btn-common btn-small" onclick="location.href='{:__URL('ADMIN_MAIN/card/addcard')}';" style="margin:0 5px 0 0 !important;display: inline-block;float: left;">添加阿特礼品卡</button>
+    </div>
+
+    <div style="display: inline-block;float: right;">
+        <span>卡号：</span>
+        <input id="cardNo" class="input-medium input-common" type="text" value="" placeholder="请输入卡号">
+        <span>是否发放：</span>
+        <select id="isIssue" class="select-common w100">
+            <option value="">全部</option>
+            <option value="1">是</option>
+        </select>
+
+        <input class="btn-common" type="button" onclick="search()" value="搜索"/>
+    </div>
+</div>
+
+<div style="width: 100%;clear: both;"></div>
+
+
+<div class="x360_table">
+    <table class="x360">
+        <thead>
+        <tr style="height: 50px;">
+            <th width="25%">卡号</th>
+            <th width="12%">面额</th>
+            <th width="12%">是否发放</th>
+            <th width="12%">是否使用</th>
+            <th width="12%">状态</th>
+            <th width="15%">到期时间</th>
+            <th width="12%">操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+{/block}
+{block name="script"}
+<script type="text/javascript">
+
+    $(function(){
+
+    });
+
+    function search(){
+        LoadingInfo(1);
+    }
+
+    function LoadingInfo(page_index){
+        // alert('woshi xushuqing');
+        var card_no = $("#cardNo").val();
+        var is_issue = $("#isIssue").val();
+        $.ajax({
+            type : 'post',
+            url : "{:__URL('ADMIN_MAIN/card/cardlist')}",
+            data : {
+                'page_index' : page_index,
+                'page_size' : $('#showNumber').val(),
+                'card_no' : card_no,
+                'is_issue' : is_issue,
+            },
+            success : function(data){
+                var html = '';
+                //data['data'].length
+                if(data['data'].length > 0){
+                    // alert(JSON.stringify(data['data']));
+                    for(var i = 0; i < data['data'].length; i++){
+                        var card_id = data['data'][i]['card_id'];
+                        var card_no = data['data'][i]['card_no'];
+                        var card_money = data['data'][i]['card_money'];
+                        var is_issue = data['data'][i]['is_issue'];
+                        var is_use = data['data'][i]['is_use'];
+                        var is_destroy = data['data'][i]['is_destroy'];
+                        var expire_date = timeStampTurnTime(data['data'][i]['expire_date']);
+
+                        html += '<tr>';
+                            html += '<td class="card_no">';
+                                html += '<input disabled="disabled" class="input" type="text" value="'+card_no+'" />';
+                                html += '<a class="copy" onclick="copy_card_no(this)">复制</a>'
+                            html += '</td>';
+                            html += '<td>￥'+ card_money  +'</td>';
+                            if(is_issue == 1) {
+                                html += '<td style="color:#0072D2;">已发放</td>';
+                            }else{
+                                html += '<td><a style="color:#999;" href="javascript:issueCard('+card_id+')">未发放</a></td>';
+                            }
+                            if(is_use == 1) {
+                                html += '<td style="color:#0072D2;">已使用</td>';
+                            }else{
+                                html += '<td style="color:#999;">未使用</td>';
+                            }
+                            if(is_destroy == 1) {
+                                html += '<td style="color:#999;">已销毁</td>';
+                            }else{
+                                html += '<td style="color:#0072D2;">正常</td>';
+                            }
+                            html += '<td>'+ expire_date +'</td>';
+                            if(is_destroy == 1) {
+                                html += '<td></td>';
+                            }else{
+                                html += '<td><a href="javascript:destroyCard('+card_id+')">销毁</a></td>';
+                            }
+                        html += '</tr>';
+                    }
+                }else{
+                    html += '<tr align="center"><td colspan="7">暂无符合条件的阿特礼品卡</td></tr>';
+                }
+
+                $(".x360 tbody").html(html);
+                initPageData(data['page_count'],data['data'].length,data['total_count']);
+                $('#pageNumber').html(pagenumShow(jumpNumber,$('#page_count').val(),{$pageshow}));
+            }
+        });
+    }
+
+    function copy_card_no(obj)
+    {
+        let card_no = $(obj).parent().find('input').val();
+        let link_input = document.createElement('input');
+        link_input.value = card_no;
+        document.body.appendChild(link_input);
+        link_input.select();
+        document.execCommand("Copy");
+        link_input.style.display = 'none';
+        showTip('复制成功','success');
+    }
+
+    function issueCard(card_id)
+    {
+        $.ajax({
+            type : "post",
+            url :  "{:__URL('ADMIN_MAIN/card/issuecard')}",
+            data : { "card_id" : card_id },
+            success : function(data) {
+                if(data){
+                    showTip('发放成功','success');
+                    window.location.reload();
+                }else{
+                    showTip('发放失败','error');
+                }
+            }
+        })
+    }
+
+    function destroyCard(card_id)
+    {
+        $.ajax({
+            type : "post",
+            url :  "{:__URL('ADMIN_MAIN/card/destroycard')}",
+            data : { "card_id" : card_id },
+            success : function(data) {
+                if(data){
+                    showTip('销毁成功','success');
+                    window.location.reload();
+                }else{
+                    showTip('销毁失败','error');
+                }
+            }
+        })
+    }
+
+
+</script>
+
+{/block}
+
+
+

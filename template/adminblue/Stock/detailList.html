@@ -1,0 +1,108 @@
+{extend name="adminblue/base" /}
+{block name="resources"/}
+<link rel="stylesheet" type="text/css" href="ADMIN_CSS/product.css">
+<script type="text/javascript" src="__STATIC__/My97DatePicker/WdatePicker.js"></script>
+<style>
+    .x360_table{width: 100%;min-height: 300px;}
+    .x360_table table {width:100%;margin:15px 0;border:0;}
+    .x360_table th {background-color:#d9edf7;color:#3a87ad;font-weight: normal;}
+    .x360_table,.x360_table th,.x360_table td {font-size:0.95em;text-align:center;padding:4px;border-collapse:collapse;}
+    .x360_table tr td{padding:10px 4px;}
+    .x360_table tr:nth-child(odd){background-color:#ececec;}
+    .x360_table tr:nth-child(even){background-color:#fdfdfd;}
+</style>
+{/block}
+{block name="main"}
+
+<div style="padding: 10px 0;float: right;">
+    <span>商品名称：</span>
+    <input id="goodsName" class="input-medium input-common" type="text" value="" placeholder="要搜索的商品名称">
+    <span>日期：</span>
+    <input type="text" id="startDate" class="input-common w100" placeholder="请选择日期" onclick="WdatePicker()" />
+    -
+    <input type="text" id="endDate" class="input-common w100" placeholder="请选择日期" onclick="WdatePicker()" />
+    <input class="btn-common" type="button" onclick="search()" value="搜索"/>
+</div>
+
+<div style="width: 100%;clear: both;"></div>
+
+
+<div class="x360_table">
+    <table class="x360">
+        <thead>
+        <tr style="height: 50px;">
+            <th width="40%" style="text-align: left;">商品名称</th>
+            <th width="15%">规格</th>
+            <th width="15%">日期</th>
+            <th width="15%">结存数量</th>
+            <th width="15%">结存金额</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+{/block}
+{block name="script"}
+<script type="text/javascript">
+
+    $(function(){
+
+    });
+
+    function search(){
+        LoadingInfo(1);
+    }
+
+    function LoadingInfo(page_index){
+        // alert('woshi xushuqing');
+        var start_date = $('#startDate').val();
+        var end_date = $('#endDate').val();
+        var goods_name = $('#goodsName').val();
+        $.ajax({
+            type : 'post',
+            url : "{:__URL('ADMIN_MAIN/stocks/detaillist')}",
+            data : {
+                'page_index' : page_index,
+                'page_size' : $('#showNumber').val(),
+                'start_date' : start_date,
+                'end_date' : end_date,
+                'goods_name' : goods_name
+            },
+            success : function(data){
+                var html = '';
+                if(data['data'].length > 0){
+                    // alert(JSON.stringify(data['data']));
+                    for(var i = 0; i < data['data'].length; i++){
+                        var goods_name = data["data"][i]['goods_name'];
+                        var sku_name = data["data"][i]["sku_name"];
+                        var int_day = data['data'][i]['int_day'];
+                        var stock = data['data'][i]['stock'];
+                        var money = data['data'][i]['money'];
+                        html += '<tr>'
+                        html += '<td style="text-align: left;">'+goods_name+'</td>'
+                        html += '<td>'+sku_name+'</td>'
+                        html += '<td>'+int_day+'</td>'
+                        html += '<td>'+stock+'</td>'
+                        html += '<td>'+money+'</td>'
+                        html += '</tr>'
+                    }
+                }else{
+                    html += '<tr align="center"><td colspan="10">暂无符合条件的入库记录</td></tr>';
+                }
+
+                $(".x360 tbody").html(html);
+                initPageData(data['page_count'],data['data'].length,data['total_count']);
+                $('#pageNumber').html(pagenumShow(jumpNumber,$('#page_count').val(),{$pageshow}));
+            }
+        });
+    }
+
+
+</script>
+
+{/block}
+
+
+

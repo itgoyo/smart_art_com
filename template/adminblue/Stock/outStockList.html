@@ -1,0 +1,206 @@
+{extend name="adminblue/base" /}
+{block name="resources"/}
+<link rel="stylesheet" type="text/css" href="ADMIN_CSS/product.css">
+<script type="text/javascript" src="__STATIC__/My97DatePicker/WdatePicker.js"></script>
+<style>
+    .x360_table{width: 100%;min-height: 300px;}
+    .x360_table table {width:100%;margin:15px 0;border:0;}
+	.x360_table th {background-color:#d9edf7;color:#3a87ad;font-weight: normal;}
+	.x360_table,.x360_table th,.x360_table td {font-size:0.95em;text-align:center;padding:4px;border-collapse:collapse;}
+	.x360_table tr td{padding:10px 4px;}
+	.x360_table tr:nth-child(odd){background-color:#ececec;}
+	.x360_table tr:nth-child(even){background-color:#fdfdfd;}
+</style>
+{/block}
+{block name="main"}
+    
+    <div style="padding: 10px 0;float: right;">
+        <span>商品名称：</span>
+        <input id="goodsName" class="input-medium input-common" type="text" value="" placeholder="要搜索的商品名称">
+		<span>出库时间：</span>
+		<input type="text" id="startDate" class="input-common w100" placeholder="请选择开始日期" onclick="WdatePicker()" />
+		&nbsp;-&nbsp;
+		<input type="text" id="endDate" placeholder="请选择结束日期" class="input-common w100" onclick="WdatePicker()" />
+		<span>操作时间：</span>
+		<input type="text" id="start" class="input-common w100" placeholder="请选择开始日期" onclick="WdatePicker()" />
+		&nbsp;-&nbsp;
+		<input type="text" id="end" placeholder="请选择结束日期" class="input-common w100" onclick="WdatePicker()" />
+		<span>出库类型：</span>
+		<select id="stockType" class="select-common w100">
+			<option value="">全部</option>
+			{notempty name="$out_list"}
+			{volist name="$out_list" id="vo"}
+			<option value="{$vo.type_id}">{$vo.type_name}</option>
+			{/volist}
+			{/notempty}
+		</select>
+
+		<span>仓库类型：</span>
+		<select id="Type" class="select-common w100">
+			<option value="">全部</option>
+			<option value="1">出售仓库</option>
+			<option value="2">临时仓库</option>
+		</select>
+        <input class="btn-common" type="button" onclick="dataExcel()" value="导出数据"/>
+		<input class="btn-common" type="button" onclick="search()" value="搜索"/>
+	</div>
+
+	<div style="width: 100%;clear: both;"></div>
+	<div class="alert alert-info">
+		<ul class="mt5">
+			<li>
+				<span class="w210 fl h30" style="display:block;">
+					<i title="店铺符合搜索条件的出库总金额" class="tip icon-question-sign"></i>
+					总出库金额：<strong id="money">0元</strong>
+				</span>
+				<span class="w210 fl h30" style="display:block;">
+					<i title="店铺符合搜索条件的出库数量" class="tip icon-question-sign"></i>
+					总出库量：<strong id="num">0</strong>
+				</span>
+			</li>
+		</ul>
+	</div>
+
+    <div class="x360_table">
+        <table class="x360">
+            <thead>
+	            <tr style="height: 50px;">
+					<th width="5%">编号</th>
+	                <th width="15%" style="text-align:left;">商品名称</th>
+					<th width="8%">规格</th>
+	                <th width="5%">出库数量</th>
+	                <th width="5%">出库金额</th>
+					<th width="5%">成本x数量</th>
+	                <th width="8%">出库时间</th>
+	                <th width="7%">出库类型</th>
+					<th width="7%">仓库类型</th>
+	                <th width="13%">备注</th>
+					<th width="10%">操作时间</th>
+	                <th width="7%">操作人</th>
+					<th widht="5%" style="display: none;"></th>
+	            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+{/block}
+{block name="script"}
+<script type="text/javascript">
+
+    $(function(){
+
+    });
+
+    function search(){
+    	LoadingInfo(1);
+    }
+
+    function LoadingInfo(page_index){
+    	// alert('woshi xushuqing');
+    	var start_date = $('#startDate').val();
+    	var end_date = $('#endDate').val();
+    	var start = $('#start').val();
+    	var end = $('#end').val();
+    	var stock_type = $('#stockType').val();
+    	var type = $('#Type').val();
+        var goods_name = $('#goodsName').val();
+    	$.ajax({
+    		type : 'post',
+    		url : "{:__URL('ADMIN_MAIN/stocks/outstocklist')}",
+    		data : {
+                'page_index' : page_index,
+                'page_size' : $('#showNumber').val(),
+                'start_date' : start_date,
+                'end_date' : end_date,
+				'start' : start,
+				'end' : end,
+                'stock_type' : stock_type,
+				'type' : type,
+                'goods_name' : goods_name
+    		},
+    		success : function(data){
+                var html = '';
+                if(data['data'].length > 0){
+//                	 alert(JSON.stringify(data['data']));
+                	for(var i = 0; i < data['data'].length; i++){
+                	    var stock_id = data['data'][i]['stock_id'];
+                		var goods_name = data["data"][i]['goods_name'];
+                        var sku_name = data["data"][i]['sku_name'];
+	                	var nums = data['data'][i]['nums'];
+	                	var money = data['data'][i]['money'];
+                        var cost_money = data['data'][i]['cost_money'];
+	                	var time = data['data'][i]['time'];
+	                	var stock_type = data['data'][i]['stock_type'];
+	                	var type = data['data'][i]['type'];
+	                	var remark = data['data'][i]['remark'];
+                        var create_time = data['data'][i]['create_time'];
+	                	var user_name = data['data'][i]['user_name'];
+	                	html += '<tr>';
+                        html += '<td>'+stock_id+'</td>';
+
+						html += '<td style="text-align: left;">'+goods_name+'</td>'
+                        html += '<td style="text-align: center;">'+sku_name+'</td>'
+                		html += '<td>'+nums+'</td><td>'+money+'</td><td>'+cost_money+'</td><td>'+time+'</td><td>'+stock_type+'</td><td>'+type+'</td><td>'+remark+'</td><td>'+create_time+'</td><td>'+user_name+'</td><td style="display: none;"><a style="color:#ccc;" href="javascript:deleteStock(' + data["data"][i]["stock_id"] + ')"">删除</a></td></tr>'
+                	}
+                }else{
+                	html += '<tr align="center"><td colspan="10">暂无符合条件的出库记录</td></tr>';
+                }
+
+                $(".x360 tbody").html(html);
+                $("#money").text(data["total_money"]+"元");
+			    $("#num").text(data["total_nums"]);
+                initPageData(data['page_count'],data['data'].length,data['total_count']);
+                $('#pageNumber').html(pagenumShow(jumpNumber,$('#page_count').val(),{$pageshow}));
+    		}
+    	});
+    }
+
+    /**
+     * 出库数据导出
+     * @return {[type]} [description]
+     */
+    function dataExcel(){
+        var start_date = $("#startDate").val();
+        var end_date = $("#endDate").val();
+        var start = $('#start').val();
+        var end = $('#end').val();
+        var stock_type = $('#stockType').val();
+        var goods_name = $('#goodsName').val();
+        var type = $('#Type').val();
+        window.location.href=__URL("ADMIN_MAIN/stocks/outstockDataExcel?start_date="+start_date+"&end_date="+end_date+"&type="+type+"&stock_type="+stock_type+"&goods_name="+goods_name+"&start="+start+"&end="+end);
+    }
+
+
+    function deleteStock(stock_id){
+        $( "#dialog" ).dialog({
+            buttons: {
+                "确定": function() {
+                    $.ajax({
+                        type : "post",
+                        url : "{:__URL('ADMIN_MAIN/stocks/deleteStock')}",
+                        data : {'stock_id':stock_id},
+                        success : function(data) {
+                            if (data) {
+                                showMessage('success','操作成功',window.location.reload());
+                            }else{
+                                showMessage('error','操作失败');
+                            }
+                        }
+                    });
+                    $(this).dialog('close');
+                },
+                "取消,#e57373": function() {
+                    $(this).dialog('close');
+                },
+            },
+            contentText:"确定删除本条记录吗？",
+        });
+    }
+</script>
+
+{/block}
+
+
+

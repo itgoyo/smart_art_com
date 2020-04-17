@@ -1,0 +1,196 @@
+{extend name="adminblue/base" /}
+{block name="resources"/}
+<script src="ADMIN_JS/highcharts.js"></script>
+<script src="ADMIN_JS/exporting.js"></script>
+<script type="text/javascript" src="__STATIC__/My97DatePicker/WdatePicker.js"></script>
+<style  type="text/css">
+    .alert li{font-size: 12px;}
+    tr.total td{color:#0072D2;text-align: center;}
+</style>
+{/block}
+{block name="main"}
+<div class="alert">
+    <ul>
+        <li>商品进销存分析</li>
+        <li>默认为本月数据</li>
+    </ul>
+</div>
+<table class="mytable">
+    <tr>
+        <th>
+            <span>时间：</span>
+            <input type="text" id="startDate" class="input-common w200" placeholder="请选择开始日期" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+            &nbsp;-&nbsp;
+            <input type="text" id="endDate" placeholder="请选择结束日期" class="input-common w200" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+            商品名称
+            <input type="text" id="goods_name" placeholder="请输入商品名称" class="input-common" />
+            刷新
+            <input type="checkbox" id="refresh" value="1">
+            <input type="submit" class="btn-common" value="搜索" onclick="LoadingInfo(1);"/>
+            <input class="btn-common" type="button" onclick="dataExcel()" value="导出明细数据"/>
+            <input class="btn-common" type="button" onclick="dataTotalExcel()" value="导出汇总数据"/>
+        </th>
+
+    </tr>
+</table>
+<table class="table-class">
+    <colgroup>
+        <col style="width: 5%;">
+        <col style="width: 17%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+    </colgroup>
+    <thead>
+    <tr align="center">
+        <th>商品ID</th>
+        <th style="text-align: left;">商品名称(规格)</th>
+        <th>期初数量</th>
+        <th>期初金额</th>
+        <th>入库数量</th>
+        <th>入库金额</th>
+        <th>出库数量</th>
+        <th>出库金额</th>
+        <th>采购数量</th>
+        <th>采购金额</th>
+        <th>销售数量</th>
+        <th>销售金额</th>
+        <th>销售毛利</th>
+        <th>结存数量</th>
+        <th>结存金额</th>
+    </tr>
+    </thead>
+    <colgroup>
+        <col style="width: 5%;">
+        <col style="width: 23%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+    </colgroup>
+    <tbody></tbody>
+</table>
+<script type="text/javascript">
+    function LoadingInfo(page_index) {
+        var goods_name = $("#goods_name").val();
+        var start_date = $('#startDate').val();
+        var end_date = $('#endDate').val();
+        var refresh = $('#refresh:checked').val();
+        $.ajax({
+            type : "post",
+            url : "{:__URL('ADMIN_MAIN/account/purchasesellstock')}",
+            data : {
+                "page_index" : page_index,
+                "page_size" : $("#showNumber").val(),
+                "goods_name":goods_name,
+                'start_date' : start_date,
+                'end_date' : end_date,
+                'refresh' : refresh,
+            },
+            success : function(data) {
+                var html = '';
+                if (data["data"].length > 0) {
+                    for (var i = 0; i < data["data"].length; i++) {
+                        var goods_name = "";
+                        if(data["data"][i]["goods_name"].length > 23){
+                            goods_name = data["data"][i]["goods_name"].substring(0 ,24)+"..." ;
+                        }else{
+                            goods_name =  data["data"][i]["goods_name"];
+                        }
+
+                        html += '<tr align="center">';
+                        html += '<td>'+ data["data"][i]['goods_id'] +'</td>';
+                        html += '<td class="tal" title="'+ data["data"][i]["goods_name"] +'" style="text-align: left;">'  + goods_name +'</td>';
+                        html += '<td>'  + data["data"][i]["pre_nums"] +'</td>';
+                        html += '<td>'  + data["data"][i]["pre_money"] +'</td>';
+                        html += '<td>'  + data["data"][i]["instock_nums"] +'</td>';
+                        html += '<td>'  + data["data"][i]["instock_money"] +'</td>';
+                        html += '<td>'  + data["data"][i]["outstock_nums"] +'</td>';
+                        html += '<td>'  + data["data"][i]["outstock_money"] +'</td>';
+                        html += '<td>'  + data["data"][i]["purchase_nums"] +'</td>';
+                        html += '<td>'  + data["data"][i]["purchase_money"] +'</td>';
+                        html += '<td>'  + data["data"][i]["sale_nums"] +'</td>';
+                        html += '<td>'  + data["data"][i]["sale_money"] +'</td>';
+                        html += '<td>'  + data["data"][i]["mao_money"] +'</td>';
+                        html += '<td>'  + data["data"][i]["balance_nums"] +'</td>';
+                        html += '<td>'  + data["data"][i]["balance_money"] +'</td>';
+                        html += '</tr>';
+                    }
+                    html += '<tr class="total">';
+                    html += '<td></td>';
+                    html += '<td style="text-align: left;">合计</td>';
+                    html += '<td id="total_pre_nums">1</td>';
+                    html += '<td id="total_pre_money">2</td>';
+                    html += '<td id="total_instock_nums">3</td>';
+                    html += '<td id="total_instock_money">4</td>';
+                    html += '<td id="total_outstock_nums">5</td>';
+                    html += '<td id="total_outstock_money">6</td>';
+                    html += '<td id="total_purchase_nums">7</td>';
+                    html += '<td id="total_purchase_money">8</td>';
+                    html += '<td id="total_sale_nums">9</td>';
+                    html += '<td id="total_sale_money">10</td>';
+                    html += '<td id="total_mao_money">11</td>';
+                    html += '<td id="total_balance_nums">12</td>';
+                    html += '<td id="total_balance_money">13</td>';
+                    html += '</tr>'
+                } else {
+                    html += '<tr align="center"><td colspan="14">暂无符合条件的数据记录</td></tr>';
+                }
+                $(".table-class tbody").html(html);
+                $("#total_pre_nums").text(data["total_pre_nums"]);
+                $("#total_pre_money").text(data["total_pre_money"]);
+                $("#total_instock_nums").text(data["total_instock_nums"]);
+                $("#total_instock_money").text(data["total_instock_money"]);
+                $("#total_outstock_nums").text(data["total_outstock_nums"]);
+                $("#total_outstock_money").text(data["total_outstock_money"]);
+                $("#total_purchase_nums").text(data["total_purchase_nums"]);
+                $("#total_purchase_money").text(data["total_purchase_money"]);
+                $("#total_sale_nums").text(data["total_sale_nums"]);
+                $("#total_sale_money").text(data["total_sale_money"]);
+                $("#total_mao_money").text(data["total_mao_money"]);
+                $("#total_balance_nums").text(data["total_balance_nums"]);
+                $("#total_balance_money").text(data["total_balance_money"]);
+                initPageData(data["page_count"],data['data'].length,data['total_count']);
+                $("#pageNumber").html(pagenumShow(jumpNumber,$("#page_count").val(),{$pageshow}));
+            }
+        });
+    }
+
+
+    /**
+     * 数据导出
+     * @return {[type]} [description]
+     */
+    function dataExcel(){
+        var start_date = $("#startDate").val();
+        var end_date = $("#endDate").val();
+        var goods_name = $('#goods_name').val();
+        window.location.href=__URL("ADMIN_MAIN/account/purDataExcel?start_date="+start_date+"&end_date="+end_date+"&goods_name="+goods_name);
+    }
+
+    function dataTotalExcel(){
+        var start_date = $("#startDate").val();
+        var end_date = $("#endDate").val();
+        var goods_name = $('#goods_name').val();
+        window.location.href=__URL("ADMIN_MAIN/account/purTotalDataExcel?start_date="+start_date+"&end_date="+end_date+"&goods_name="+goods_name);
+    }
+</script>
+{/block}

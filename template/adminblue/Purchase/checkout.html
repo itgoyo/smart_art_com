@@ -1,0 +1,330 @@
+{extend name="adminblue/base" /}
+{block name="resources"/}
+<script type="text/javascript" src="__STATIC__/My97DatePicker/WdatePicker.js"></script>
+<link href="__STATIC__/blue/css/order/ns_orderlist.css" rel="stylesheet" type="text/css" />
+<style>
+.mytable.select td{padding-bottom:0;}
+.mytable.select div{display:inline-block;margin:0 10px 10px 0;}
+.mytable.select #more_search{display: block;}
+.table-class tbody td a {margin-left: 0;}
+.order-tool{
+    display: inline;
+    position: absolute;
+    margin-top: 10px;
+    margin-left: 16px;
+}
+</style>
+{/block}
+{block name="thirdmenu"}{/block}
+{block name="warm_prompt"}{/block}
+{block name="right_tab_tip"}{/block}
+{block name="main"}
+<input type="hidden" id="purchase_id" />
+<input type="hidden" id="print_select_ids" />
+<input type="hidden" id="purchaseStatus" value="{$status}" />
+
+<div class="modal fade hide" id="instock" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="width:700px;left:45%;top:30%;">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+				<h3>采购入库</h3>
+			</div>
+			<div class="set-style">
+			    <input type="hidden" id="goods_id">
+			    <input type="hidden" id="price">
+			    <input type="hidden" id="purchase_goods_id">
+				<dl>
+				    <dt><span class="required">*</span>入库数量</dt>
+				    <dd>
+                        <input type="number" id="in_num">
+                        <p class="error in_num">请输入入库数量</p>
+				    </dd>
+				    <dt><span class="required">*</span>入库日期</dt>
+				    <dd>
+                        <input type="text" id="in_time" class="input-common w100" placeholder="请选择入库日期" onclick="WdatePicker()" />
+                        <p class="error in_time">请输入入库日期</p>
+				    </dd>
+					<dt>备注:</dt>
+					<dd>
+						<p>
+							<textarea rows="3" cols="20" id="in_remark"></textarea>
+						</p>
+						<p class="error">请输入备注</p>
+					</dd>
+				</dl>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-primary" onclick="addStockAjax()">保存</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div style="border:1px solid #e5e5e5;">
+	<table class="mytable select">
+		<tr>
+			<td>
+				<div>
+					<span>采购时间：</span>
+					<input type="text" id="startDate" class="input-common w100" placeholder="请选择开始日期" onclick="WdatePicker()" />
+					&nbsp;-&nbsp;
+					<input type="text" id="endDate" placeholder="请选择结束日期" class="input-common w100" onclick="WdatePicker()" />
+				</div>
+
+				<div>
+					<span>采购单号：</span>
+					<input id="PurchaseNo" class="input-common w100" type="text" />
+					<input class="btn-common" type="button" onclick="searchData()" value="搜索"/>
+					<input class="btn-common" type="button" onclick="dataExcel()" value="导出数据"/>
+				</div><br>
+				</span>
+			</td>
+		</tr>
+	</table>
+	<div class="divider"></div>
+	<nav class="order-nav">
+		<ul>
+			{foreach name="child_menu_list" item="child_menu" key="k" }
+				{eq name="child_menu['active']" value="1"}
+				<li class="selected"><a href="{:__URL('ADMIN_MAIN/'.$child_menu['url'])}">{$child_menu.menu_name}</a></li>
+			{else/}
+				<li><a href="{:__URL('ADMIN_MAIN/'.$child_menu['url'])}">{$child_menu.menu_name}</a></li>
+			{/eq}
+			{/foreach}
+
+		</ul>
+	</nav>
+	<table class="table-class">
+		<colgroup>
+			<col width="25%">
+			<col width="15%">
+			<col width="10%">
+			<col width="15%">
+			<col width="10%">
+			<col width="10%">
+			<col width="15%">
+		</colgroup>
+		<thead>
+			<tr align="center">
+				<div class="order-tool">
+					<input type="checkbox" onclick="CheckAll(this)" id="check">
+					<label for="check">全选</label>
+				</div>
+				<th>商品信息</th>
+				<th>供应商</th>
+				<th>入库状态</th>
+				<th>操作</th>
+				<th>商品清单</th>
+				<th>订单金额</th>
+				<th>采购人</th>
+			</tr>
+		</thead>
+		<tbody>
+		    
+		</tbody>
+	</table>
+</div>
+{/block}
+{block name="script"}
+{include file="adminblue/Order/orderAction"/}
+{include file="adminblue/Order/orderRefundAction"/}
+<!-- 订单打印 -->
+{include file="adminblue/Order/orderPrintAction"/}
+<script type="text/javascript">
+$(function () {
+	$("[data-toggle='popover']").popover();
+});
+function searchData(){
+	LoadingInfo(1);
+}
+function LoadingInfo(page_index) {
+	// alert(123);
+	var start_date = $("#startDate").val();
+	var end_date = $("#endDate").val();
+	var purchase_no = $("#PurchaseNo").val();
+	var status = $('#purchaseStatus').val();
+	$.ajax({
+		type : "post",
+		url : "{:__URL('ADMIN_MAIN/purchases/checkout')}",
+		data : {
+			"page_index" : page_index,
+			"page_size" : $("#showNumber").val(),
+			"start_date" : start_date,
+			"end_date" : end_date,
+			"purchase_no" : purchase_no,
+			"status" : status
+		},
+		success : function(data) {
+			// document.write(JSON.stringify(data["data"]));
+			var html = '';
+
+			if (data["data"].length > 0) {
+				for (var i = 0; i < data["data"].length; i++) {
+					var purchase_no = data["data"][i]["purchase_no"];//采购单号
+					var purchase_id = data["data"][i]["purchase_id"];//采购id
+					var purchase_time = timeStampTurnTime(data["data"][i]["purchase_time"]);//采购时间
+					var shipping_time = timeStampTurnTime(data['data'][i]['shipping_time']); //预计到货时间
+					var pic_cover_micro = data["data"][i]["purchase_goods_list"][0]["picture"]['pic_cover_micro'];//商品图
+					var goods_id = data["data"][i]["purchase_goods_list"][0]["goods_id"];//商品id
+					var purchase_goods_id = data['data'][i]['purchase_goods_list'][0]['purchase_goods_id'];
+					var goods_name = data["data"][i]["purchase_goods_list"][0]["goods_name"];
+					var price = data["data"][i]["purchase_goods_list"][0]["price"];//商品价格
+					var num = data["data"][i]["purchase_goods_list"][0]["num"];//购买数量
+					var amount = data["data"][i]["amount"];//采购金额
+					var memo = data["data"][i]["memo"];//订单备注
+					var p_status = data['data'][i]['status'];
+					var pg_status = data['data'][i]['purchase_goods_list']['0']['status'];
+					var user_name = data["data"][i]["user_name"];//订单备注
+					var supplier_name = data["data"][i]["purchase_goods_list"][0]["supplier_name"];
+					var in_num = data['data'][i]['purchase_goods_list'][0]['in_num'];
+
+					html += '<tr class="title-tr">';
+					html += '<td colspan="7"><input id="'+purchase_no+'" type="checkbox" value="'+purchase_id+'" name="sub">';
+					html +='<span>采购单号：'+purchase_no+'</span><span>采购时间：'+purchase_time+'</span><span>预计到货时间：'+shipping_time+'</span>';
+                    if(p_status == 0){
+                    	html +='<span>订单状态：待入库</span>';
+                    }else if(p_status == 1){
+                    	html +='<span>订单状态：部分入库</span>';
+                    }else if(p_status == 2){
+                    	html +='<span>订单状态：全部入库</span>';
+                    }
+					
+                    // 查看备注
+					// if(memo.length == 0){
+					// 	html += '</td></tr>';
+					// }else{
+						html += '<span title="查看备注"><i class="fa fa-flag" aria-hidden="true" style="color:red;" title="查看备注" onclick="purchase_operation(\'purchase_memo\','+data["data"][i]["purchase_id"]+')"></i></span></td></tr>';
+					// }
+                    
+                    // 商品信息
+					html += '<tr><td>';
+					html += '<div class="product-img"><img src="'+__IMG(pic_cover_micro)+'"></div>';
+					html += '<div class="product-infor">';
+					html += '<a href="'+__URL('SHOP_MAIN/goods/goodsinfo?goodsid='+goods_id)+'" target="_blank">'+goods_name+'</a>';
+					html += '</div></td>';
+
+					// 供应商
+					html += '<td rowspan="1" style="text-align:center"><div class="cell">'+supplier_name+'<br/>';
+					html += '</div></td>';
+
+					// 入库状态
+					html += '<td rowspan="1" style="text-align:center">';
+					if(pg_status == 0){
+						html += '<div class="cell">待入库</td>';
+					}else if(pg_status == 1){
+						html += '<div class="cell">部分入库（已入库'+in_num+')</td>';
+					}else if(pg_status == 2){
+						html += '<div class="cell">全部入库</td>';
+					}
+					
+
+					// 操作
+					html += '<td rowspan="1" style="text-align:center">-</td>';
+
+					//订单数量大于1个，调整样式 商品清单
+					if(data["data"][i]["purchase_goods_list"].length>1){
+						html += '<td  style="text-align:center;">';
+						html += '<div class="cell" style="display: inline-block;"><span>'+price+'元</span></div>';
+						html += '<div class="cell" style="display: inline-block;text-align:center;">'+num+'件</div>';
+					}else{
+						html += '<td style="text-align:center;">';
+						html += '<div class="cell" style="display: inline-block;"><span>'+price+'元</span></div>';
+						html += '<div class="cell">'+num+'件</div>';
+					}
+
+					html += '</td>';
+					var row=1;//订单数量，用于设置跨行
+					if(data["data"][i]["purchase_goods_list"].length!=null)
+					{
+						row=data["data"][i]["purchase_goods_list"].length;
+					}
+
+                    // 订单金额
+					html += '<td rowspan="'+row+'" style="text-align:center">';
+					html += '<div class="cell">'+amount+'</td>';
+					html += '<div class="cell">-</td>';
+
+					// 采购人
+					html += '<td rowspan="'+row+'" style="text-align:center">';
+					html += '<div class="cell"><a class="netprice" style="color:#666;">'+user_name+'</a></td>';
+
+					
+
+					html +='</tr>';
+
+					//循环订单项
+					//前边已经加载过一次了，所以从第二次开始循环
+					for(var j = 1; j < data["data"][i]["purchase_goods_list"].length; j++){
+						var pic_cover_micro = data["data"][i]["purchase_goods_list"][j]["picture"]['pic_cover_micro'];//商品图
+						var goods_id = data["data"][i]["purchase_goods_list"][j]["goods_id"];//商品id
+						var purchase_goods_id = data['data'][i]['purchase_goods_list'][j]['purchase_goods_id'];
+						var goods_name = data["data"][i]["purchase_goods_list"][j]["goods_name"];//商品名称
+
+						var price = data["data"][i]["purchase_goods_list"][j]["price"];//价格
+						var num = data["data"][i]["purchase_goods_list"][j]["num"];//购买数量
+						var supplier_name = data["data"][i]["purchase_goods_list"][j]["supplier_name"];//供应商
+						var pg_status = data['data'][i]['purchase_goods_list'][j]['status'];
+						var in_num = data['data'][i]['purchase_goods_list'][j]['in_num'];
+
+						html += '<tr calss="no-rightborder"><td colspan="1">';
+						html += '<div class="product-img"><img src="'+__IMG(pic_cover_micro)+'"></div>';
+						html += '<div class="product-infor">';
+						html += '<a class="name" href="'+__URL('SHOP_MAIN/goods/goodsinfo?goodsid='+goods_id)+'" target="_blank">'+goods_name+'</a>';
+						html += '</div></td>';
+
+						// 供应商
+						html += '<td rowspan="1" style="text-align:center"><div class="cell">'+supplier_name+'<br/>';
+						html += '</div></td>';
+
+						// 入库状态
+						if(pg_status == 0){
+							html += '<td rowspan="1" style="text-align:center"><div class="cell">待入库';
+						}else if(pg_status == 1){
+							html += '<td rowspan="1" style="text-align:center"><div class="cell">部分入库（已入库'+in_num+')';
+						}else if(pg_status == 2){
+							html += '<td rowspan="1" style="text-align:center"><div class="cell">全部入库';
+						}
+						
+						html += '</div></td>';
+
+						// 操作
+						html += '<td rowspan="1" style="text-align:center"><div class="cell">-</td>';
+
+						//只给中间的商品加
+						if((j+1) != data["data"][i]["purchase_goods_list"].length){
+							html += '<td style="border-left:0px solid #fff;border-bottom:1px solid #e5e5e5;text-align:center">';//商品信息与商品清单的分割线
+						}else{
+							html += '<td style="border-left:0px solid #fff;text-align:center">';//商品信息与商品清单的分割线
+						}
+						html += '<div class="cell" style="display: inline-block;"><span>'+price+'元</span></div>';
+						html += '<div class="cell" style="display: inline-block;">'+num+'件</div>';
+						html += '</td>';		
+						html += '</tr>';
+					}
+				}
+			} else {
+				html += '<tr align="center"><td colspan="9">暂无符合条件的采购订单</td></tr>';
+			}
+
+			$(".table-class tbody").html(html);
+			initPageData(data["page_count"],data['data'].length,data['total_count']);
+			$("#pageNumber").html(pagenumShow(jumpNumber,$("#page_count").val(),{$pageshow}));
+		}
+	});
+}
+
+
+/**
+ * 采购订单数据导出
+ */
+function dataExcel(){
+	var start_date = $("#startDate").val();
+	var end_date = $("#endDate").val();
+	var purchase_no = $("#PurchaseNo").val();
+	var status = $('#purchaseStatus').val();
+	window.location.href=__URL("ADMIN_MAIN/purchases/purchaseCheckDataExcel?start_date="+start_date+"&end_date="+end_date+"&purchase_no="+purchase_no+"&status="+status);
+}
+
+</script>
+{/block}

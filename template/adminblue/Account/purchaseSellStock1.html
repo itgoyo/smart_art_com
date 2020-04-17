@@ -1,0 +1,127 @@
+{extend name="adminblue/base" /}
+{block name="resources"/}
+<script src="ADMIN_JS/highcharts.js"></script>
+<script src="ADMIN_JS/exporting.js"></script>
+<script type="text/javascript" src="__STATIC__/My97DatePicker/WdatePicker.js"></script>
+<style  type="text/css">
+    .alert li{font-size: 12px;}
+</style>
+{/block}
+{block name="main"}
+<div class="alert">
+    <ul>
+        <li>商品进销存分析</li>
+    </ul>
+</div>
+<table class="mytable">
+    <tr>
+        <th>
+            <span>时间：</span>
+            <input type="text" id="startDate" class="input-common w100" placeholder="请选择开始日期" onclick="WdatePicker()" />
+            &nbsp;-&nbsp;
+            <input type="text" id="endDate" placeholder="请选择结束日期" class="input-common w100" onclick="WdatePicker()" />
+            商品名称
+            <input type="text" id="goods_name" class="input-common" />
+            <input type="submit" class="btn-common" value="搜索" onclick="LoadingInfo(1);"/>
+            <input class="btn-common" type="button" onclick="dataExcel()" value="导出数据"/>
+        </th>
+
+    </tr>
+</table>
+<table class="table-class">
+    <colgroup>
+        <col style="width: 28%;">
+        <col style="width: 15%;">
+        <col style="width: 15%;">
+        <col style="width: 15%;">
+        <col style="width: 9%;">
+        <col style="width: 9%;">
+        <col style="width: 9%;">
+        <col style="width: 5%;">
+    </colgroup>
+    <thead>
+    <tr align="center">
+        <th>商品名称</th>
+        <th>入库数量</th>
+        <th>入库金额</th>
+        <th>出库数量</th>
+        <th>出库金额</th>
+        <th>库存总数</th>
+        <th>剩余库存成本</th>
+    </tr>
+    </thead>
+    <colgroup>
+        <col style="width: 28%;">
+        <col style="width: 15%;">
+        <col style="width: 15%;">
+        <col style="width: 15%;">
+        <col style="width: 9%;">
+        <col style="width: 9%;">
+        <col style="width: 9%;">
+    </colgroup>
+    <tbody></tbody>
+</table>
+<script type="text/javascript">
+    function LoadingInfo(page_index) {
+        var goods_name = $("#goods_name").val();
+        var start_date = $('#startDate').val();
+        var end_date = $('#endDate').val();
+        $.ajax({
+            type : "post",
+            url : "{:__URL('ADMIN_MAIN/account/purchasesellstock')}",
+            data : {
+                "page_index" : page_index,
+                "page_size" : $("#showNumber").val(),
+                "goods_name":goods_name,
+                'start_date' : start_date,
+                'end_date' : end_date,
+            },
+            success : function(data) {
+                var html = '';
+                if (data["data"].length > 0) {
+                    for (var i = 0; i < data["data"].length; i++) {
+                        var goods_name = "";
+                        if(data["data"][i]["goods_name"].length > 23){
+                            goods_name = data["data"][i]["goods_name"].substring(0 ,24)+"..." ;
+                        }else{
+                            goods_name =  data["data"][i]["goods_name"];
+                        }
+                        var stock = data["data"][i]["stock"] + data["data"][i]["temporary_stock"];
+                        var instock_nums = data["data"][i]["instock_nums"];
+                        var instock_money = data["data"][i]["instock_money"];
+                        var outstock_nums = data["data"][i]["outstock_nums"];
+                        var outstock_money = data["data"][i]["outstock_money"];
+                        var cost_money = data['data'][i]['cost_money'];
+                        html += '<tr align="center">';
+                        html += '<td class="tal" title="' + goods_name + '">' + goods_name + '</td>';
+                        html += '<td>' + instock_nums + '</td>';
+                        html += '<td>' + instock_money + '</td>';
+                        html += '<td>' + outstock_nums + '</td>';
+                        html += '<td>' + outstock_money + '</td>';
+                        html += '<td>' + stock + '</td>';
+                        html += '<td>' + cost_money + '</td>';
+                        html += '</tr>';
+                    }
+                } else {
+                    html += '<tr align="center"><td colspan="7">暂无符合条件的数据记录</td></tr>';
+                }
+                $(".table-class tbody").html(html);
+                initPageData(data["page_count"],data['data'].length,data['total_count']);
+                $("#pageNumber").html(pagenumShow(jumpNumber,$("#page_count").val(),{$pageshow}));
+            }
+        });
+    }
+
+
+    /**
+     * 数据导出
+     * @return {[type]} [description]
+     */
+    function dataExcel(){
+        var start_date = $("#startDate").val();
+        var end_date = $("#endDate").val();
+        var goods_name = $('#goods_name').val();
+        window.location.href=__URL("ADMIN_MAIN/account/purDataExcel?start_date="+start_date+"&end_date="+end_date+"&goods_name="+goods_name);
+    }
+</script>
+{/block}

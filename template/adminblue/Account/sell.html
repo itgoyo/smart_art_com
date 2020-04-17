@@ -1,0 +1,219 @@
+{extend name="adminblue/base" /}
+{block name="resources"/}
+<link rel="stylesheet" type="text/css" href="ADMIN_CSS/product.css">
+<script type="text/javascript" src="__STATIC__/My97DatePicker/WdatePicker.js"></script>
+<style>
+    .x360_table{width: 100%;min-height: 300px;}
+    .x360_table table {width:100%;margin:15px 0;border:0;}
+    .x360_table th {background-color:#d9edf7;color:#3a87ad;font-weight: normal;}
+    .x360_table,.x360_table th,.x360_table td {font-size:0.95em;text-align:center;padding:4px;border-collapse:collapse;}
+    .x360_table tr td{padding:10px 4px;}
+    .x360_table tr:nth-child(odd){background-color:#ececec;}
+    .x360_table tr:nth-child(even){background-color:#fdfdfd;}
+</style>
+{/block}
+{block name="main"}
+
+<div style="padding: 10px 0;float: right;">
+    <span>商品名称：</span>
+    <input id="goodsName" class="input-medium input-common" type="text" value="" placeholder="要搜索的商品名称">
+    <span>时间：</span>
+    <input type="text" id="startDate" class="input-common w100" placeholder="请选择开始日期" onclick="WdatePicker()" />
+    &nbsp;-&nbsp;
+    <input type="text" id="endDate" placeholder="请选择结束日期" class="input-common w100" onclick="WdatePicker()" />
+
+    <span>入/出库：</span>
+    <select id="stockType" class="select-common w100">
+        <option value="">全部</option>
+        <option value="1">入库</option>
+        <option value="2">出库</option>
+    </select>
+
+    <span>类型：</span>
+    <select id="Type" class="select-common w100">
+        <option value="">全部</option>
+        {notempty name="$stock_list"}
+        {volist name="$stock_list" id="vo"}
+        <option value="{$vo.type_id}">{$vo.type_name}</option>
+        {/volist}
+        {/notempty}
+    </select>
+    <input class="btn-common" type="button" onclick="dataExcel()" value="导出数据"/>
+    <input class="btn-common" type="button" onclick="search()" value="搜索"/>
+</div>
+
+<div style="width: 100%;clear: both;"></div>
+<div class="alert alert-info" style="overflow:auto;">
+    <style>
+        ul.mt5 li span{display: block;width: 30%;float:left;}
+    </style>
+    <ul class="mt5">
+        <li>
+            <span class="w210 fl h30">
+                <i title="店铺符合搜索条件的入库总金额" class="tip icon-question-sign"></i>
+					入库总金额：<strong id="instock_money">0元</strong>
+            </span>
+            <span class="w210 fl h30">
+                <i title="店铺符合搜索条件的入库数量" class="tip icon-question-sign"></i>
+					入库总数量：<strong id="instock_num">0</strong>
+            </span>
+            <br/>
+            <span class="w210 fl h30">
+                <i title="店铺符合搜索条件的出库总金额" class="tip icon-question-sign"></i>
+					出库总金额：<strong id="outstock_money">0元</strong>
+            </span>
+            <span class="w210 fl h30">
+                <i title="店铺符合搜索条件的出库总数量：" class="tip icon-question-sign"></i>
+					出库总数量：<strong id="outstock_num">0</strong>
+            </span>
+            <br/>
+            <span class="w210 fl h30">
+                <i title="店铺符合搜索条件的订单入库总金额" class="tip icon-question-sign"></i>
+					订单入库总金额：<strong id="inorder_money">0元</strong>
+            </span>
+            <span class="w210 fl h30">
+                <i title="店铺符合搜索条件的订单入库总数量" class="tip icon-question-sign"></i>
+					订单入库总数量：<strong id="inorder_num">0</strong>
+            </span>
+            <br/>
+            <span class="w210 fl h30">
+                <i title="店铺符合搜索条件的订单出库总金额" class="tip icon-question-sign"></i>
+					订单出库总金额：<strong id="outorder_money">0元</strong>
+            </span>
+            <span class="w210 fl h30">
+                <i title="店铺符合搜索条件的订单出库总数量" class="tip icon-question-sign"></i>
+					订单出库总数量：<strong id="outorder_num">0</strong>
+            </span>
+        </li>
+    </ul>
+</div>
+
+<div class="x360_table">
+    <table class="x360">
+        <thead>
+        <tr style="height: 50px;">
+            <th width="25%">商品名称</th>
+            <th width="10%">成本价</th>
+            <th width="10%">销售价</th>
+            <th width="10%">入/出库</th>
+            <th width="10%">数量</th>
+            <th width="10%">金额</th>
+            <th width="10%">类型</th>
+            <th width="15%">时间</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+{/block}
+{block name="script"}
+<script type="text/javascript">
+
+    $(function(){
+
+    });
+
+    function search(){
+        LoadingInfo(1);
+    }
+
+    function LoadingInfo(page_index){
+        // alert('woshi xushuqing');
+        var start_date = $('#startDate').val();
+        var end_date = $('#endDate').val();
+        var stock = $('#stockType').val();
+        var type = $('#Type').val();
+        var goods_name = $('#goodsName').val();
+        $.ajax({
+            type : 'post',
+            url : "{:__URL('ADMIN_MAIN/account/sell')}",
+            data : {
+                'page_index' : page_index,
+                'page_size' : $('#showNumber').val(),
+                'start_date' : start_date,
+                'end_date' : end_date,
+                'stock' : stock,
+                'type' : type,
+                'goods_name' : goods_name
+            },
+            success : function(data){
+                var html = '';
+                if(data['data'].length > 0){
+                    //alert(JSON.stringify(data['data']));
+                    for(var i = 0; i < data['data'].length; i++){
+                        var goods = data["data"][i];
+                        var goods_name = data["data"][i]['goods_name'];
+
+                        if(goods['is_instock'] == 1){
+                            var stock = '入库';
+                        }else{
+                            var stock = '出库';
+                        }
+                        
+                        var name = data["data"][i]['sku_name'];
+                        var good = data["data"][i]['goods'];
+                        if(name) {
+                            var sku = data["data"][i]['goods_sku'];
+                            var cost_price = sku['cost_price'];
+                            var price = sku['price'];
+                        }else{
+                            var cost_price = good['cost_price'];
+                            var price = good['price'];
+                        }
+
+                        var sku_name = data["data"][i]["sku_name"];
+                        var nums = data['data'][i]['nums'];
+                        var money = data['data'][i]['money'];
+                        var time = data['data'][i]['time'];
+                        var stock_type = data['data'][i]['stock_type'];
+                        var type = data['data'][i]['type'];
+                        var remark = data['data'][i]['remark'];
+                        var user_name = data['data'][i]['user_name'];
+                        if(sku_name){
+                            html += '<tr><td>'+goods_name+'('+sku_name+')</td>'
+                        }else{
+                            html += '<tr><td>'+goods_name+'</td>'
+                        }
+
+                        html += '<td>'+cost_price+'</td><td>'+price+'</td><td>'+stock+'</td><td>'+nums+'</td><td>'+money+'</td><td>'+stock_type+'</td><td>'+time+'</td></tr>'
+                    }
+                }else{
+                    html += '<tr align="center"><td colspan="6">暂无符合条件的入库记录</td></tr>';
+                }
+
+                $(".x360 tbody").html(html);
+                $("#instock_money").text(data["total_instock_money"]+"元");
+                $("#instock_num").text(data["total_instock_nums"]);
+                $("#outstock_money").text(data["total_outstock_money"]+"元");
+                $("#outstock_num").text(data["total_outstock_nums"]);
+                $("#inorder_money").text(data["total_inorder_money"]+"元");
+                $("#inorder_num").text(data["total_inorder_nums"]);
+                $("#outorder_money").text(data["total_outorder_money"]+"元");
+                $("#outorder_num").text(data["total_outorder_nums"]);
+
+                initPageData(data['page_count'],data['data'].length,data['total_count']);
+                $('#pageNumber').html(pagenumShow(jumpNumber,$('#page_count').val(),{$pageshow}));
+            }
+        });
+    }
+
+    /**
+     * 入库数据导出
+     * @return {[type]} [description]
+     */
+    function dataExcel(){
+        var start_date = $("#startDate").val();
+        var end_date = $("#endDate").val();
+        var stock = $('#stockType').val();
+        var type = $('#Type').val();
+        var goods_name = $('#goodsName').val();
+        window.location.href=__URL("ADMIN_MAIN/account/sellDataExcel?start_date="+start_date+"&end_date="+end_date+"&stock="+stock+"&type="+type+"&goods_name="+goods_name);
+    }
+</script>
+
+{/block}
+
+
+

@@ -1,0 +1,253 @@
+{extend name="adminblue/base" /}
+{block name="resources"/}
+<script src="ADMIN_JS/highcharts.js"></script>
+<script src="ADMIN_JS/exporting.js"></script>
+<script type="text/javascript" src="__STATIC__/My97DatePicker/WdatePicker.js"></script>
+<style  type="text/css">
+    /* .mt5 li{font-size: 12px;}
+    .alert-info{border-radius: 0;} */
+
+    .x360_table{width: 100%;min-height: 300px;}
+    .x360_table table {width:100%;margin:15px 0;border:0;}
+    .x360_table th {background-color:#d9edf7;color:#3a87ad;font-weight: normal;}
+    .x360_table,.x360_table th,.x360_table td {font-size:0.95em;text-align:center;padding:4px;border-collapse:collapse;}
+    .x360_table tr td{padding:10px 4px;}
+    .x360_table tr:nth-child(odd){background-color:#ececec;}
+    .x360_table tr:nth-child(even){background-color:#fdfdfd;}
+</style>
+{/block}
+{block name="main"}
+
+
+<div style="padding: 10px 0;float: right;">
+    <input class="btn-common" type="button" onclick="search()" value="查询"/>
+    <input class="btn-common" type="button" onclick="addType()" value="添加"/>
+</div>
+<div style="width: 100%;clear: both;"></div>
+
+
+<div class="modal fade hide" id="intype" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="width:700px;left:45%;top:30%;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h3>添加入库类型</h3>
+            </div>
+            <div class="set-style">
+                <dl>
+                    <dt><span class="required">*</span>入库类型</dt>
+                    <dd>
+                        <input type="text" id="type_name">
+                        <p class="error type_name">请输入入库类型</p>
+                    </dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="inTypeAjax()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade hide" id="editbox" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="width:700px;left:45%;top:30%;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h3>编辑入库类型</h3>
+            </div>
+            <div class="set-style">
+                <input type="hidden" id="type_id">
+                <dl>
+                    <dt><span class="required">*</span>入库类型</dt>
+                    <dd>
+                        <input type="text" id="edit_name">
+                        <p class="error edit_name">请输入入库类型</p>
+                    </dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="editTypeAjax()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="x360_table">
+    <table class="x360">
+        <thead>
+        <tr style="height: 50px;">
+            <th width="10%">序号</th>
+            <th width="60%">类型名称</th>
+            <th width="10">是否系统默认</th>
+            <th width="20%">操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+{/block}
+{block name="script"}
+<script type="text/javascript">
+    $(function(){
+
+    });
+
+    function search(){
+        LoadingInfo(1);
+    }
+
+    function addType()
+    {
+        $("#intype").modal('show');
+    }
+
+    function inTypeAjax()
+    {
+        var type_name = $("#type_name").val();
+        if(type_name == ''){
+            $('.error.type_name').css('display','block');
+            return false;
+        }
+        $.ajax({
+            type : 'post',
+            url : "{:__URL('ADMIN_MAIN/type/intype')}",
+            data : {
+                "type_name" : type_name,
+            },
+            success : function(data){
+                if (data) {
+                    showMessage('success','添加成功');
+                    location.reload();
+                }else{
+                    showMessage('error','添加失败');
+                }
+            }
+        });
+    }
+
+    function deleteType(type_id)
+    {
+        $( "#dialog" ).dialog({
+            buttons: {
+                "确定": function() {
+                    $.ajax({
+                        type : "post",
+                        url : "{:__URL('ADMIN_MAIN/type/deleteType')}",
+                        data : {'type_id':type_id},
+                        success : function(data) {
+                            if (data) {
+                                showMessage('success','删除成功',window.location.reload());
+                            }else{
+                                showMessage('error','删除失败');
+                            }
+                        }
+                    });
+                    $(this).dialog('close');
+                },
+                "取消,#e57373": function() {
+                    $(this).dialog('close');
+                },
+            },
+            contentText:"确定删除本条入库类型吗？",
+        });
+    }
+
+
+    function editType(type_id)
+    {
+        //alert('111')
+        $("#editbox").modal("show");
+        $.ajax({
+            type : 'post',
+            url : "{:__URL('ADMIN_MAIN/type/gettypebyid')}",
+            data : { "type_id" : type_id },
+            success : function(res){
+                $("#type_id").val(type_id);
+                $("#edit_name").val(res);
+                $("#editbox").modal("show");
+            }
+        });
+    }
+
+    function editTypeAjax()
+    {
+        var type_name = $("#edit_name").val();
+        var type_id = $("#type_id").val();
+        if(type_name == ''){
+            $('.error.edit_name').css('display','block');
+            return false;
+        }
+        $.ajax({
+            type : 'post',
+            url : "{:__URL('ADMIN_MAIN/type/edittype')}",
+            data : {
+                "type_name" : type_name,
+                "type_id" : type_id
+            },
+            success : function(data){
+                if (data) {
+                    showMessage('success','编辑成功');
+                    location.reload();
+                }else{
+                    showMessage('error','编辑失败');
+                }
+            }
+        });
+
+    }
+
+    function LoadingInfo(page_index){
+        // var date = $("#search_type").val();
+        var start_date = $("#startDate").val();
+        var end_date = $("#endDate").val();
+        var payment = $('#payment').val();
+        $.ajax({
+            type : "post",
+            url : "{:__URL('ADMIN_MAIN/type/inlist')}",
+            data:{
+                'page_index' : page_index,
+                'page_size' : $('#showNumber').val(),
+                "start_date" : start_date,
+                "end_date" : end_date,
+                "payment" : payment
+            },
+            success : function(data) {
+                // alert(JSON.stringify(data['data']));
+                var html = '';
+                if(data['data'].length > 0){
+                    for(var i = 0; i < data['data'].length; i++){
+                        var type_id = data['data'][i]['type_id'];
+                        var type_name = data['data'][i]['type_name'];
+                        var is_system = data['data'][i]['is_system'];
+
+                        html += '<tr><td>'+type_id+'</td><td>'+type_name+'</td>';
+                        if(is_system == 1){
+                            html += '<td>是</td>';
+                            html += '<td><a href="javascript:editType(' + type_id + ')"">编辑</a></td>';
+                        }else{
+                            html += '<td>否</td>'
+                            html += '<td><a href="javascript:editType(' + type_id + ')"">编辑</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="javascript:deleteType('+type_id+')"">删除</a></td>';
+                        }
+
+                        html += '</tr>';
+                    }
+                }else{
+                    html += '<tr align="center"><td colspan="4">暂无记录</td></tr>';
+                }
+
+                $(".x360 tbody").html(html);
+
+                initPageData(data['page_count'],data['data'].length,data['total_count']);
+                $('#pageNumber').html(pagenumShow(jumpNumber,$('#page_count').val(),{$pageshow}));
+            }
+        });
+    }
+
+
+
+</script>
+{/block}

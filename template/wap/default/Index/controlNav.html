@@ -1,0 +1,34 @@
+<link rel="stylesheet" type="text/css" href="__TEMP__/{$style}/public/css/navi.css">
+<div class="navi">
+	<div class="navi-item">
+		<nav class="navi-item_row">
+			<!--<a href="{:__URL('APP_MAIN/goods/integralcenter')}">
+				<span>
+					<img src="__TEMP__/{$style}/public/images/navimg/platform_nav_category1.png"><span>{:lang("integral_center")}</span>
+				</span>
+			</a>
+			<a href="{:__URL('APP_MAIN/index/discount')}">
+				<span>
+					<img src="__TEMP__/{$style}/public/images/navimg/platform_nav_limit1.png"><span>{:lang("goods_discount")}</span>
+				</span>
+			</a>
+			<a href="{:__URL('APP_MAIN/goods/brandlist')}">
+				<span>
+					<img src="__TEMP__/{$style}/public/images/navimg/platform_nav_joins1.png"><span>{:lang("brands_area")}</span>
+				</span>
+			</a>
+			<a href="{:__URL('APP_MAIN/articlecenter')}">
+				<span>
+					<img src="__TEMP__/{$style}/public/images/navimg/articlecenter.png"><span>{:lang("article_topic")}</span>
+				</span>
+			</a>-->
+			{foreach name="goodsCategoryList" item="class"}
+			<a href="{:__URL('APP_MAIN/goods/goodslist?category_id='.$class['category_id'])}">
+				<span>
+					<img src="{$class.category_icon}"><span>{$class.category_name}</span>
+				</span>
+			</a>
+			{/foreach}
+		</nav>
+	</div>
+</div>

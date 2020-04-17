@@ -1,0 +1,29 @@
+<div class="breadcrumb clearfix" style="margin: -5px 10px 10px auto;">
+	<a href="{:__URL('SHOP_MAIN/index')}" class="index">{:lang('home_page')}</a>
+	<span class="crumbs-arrow">&gt;</span>
+	<span class="last">{:lang('article_center')}</span>
+</div>
+<!-- 左半部分内容 -->
+<div class="fl">
+	<div class="store-category">
+		<h3 class="left-title bg-color">{:lang('article_center')}</h3>
+		<div class="left-content tree">
+			<ul>
+				{foreach name="cmsList" id="cms"}
+				{if condition="$cms['pid'] eq '0'"}
+				<li>
+					<h4>
+					    {if condition="$cms['class_id'] eq $class_id"}
+						<a href="{:__URL('SHOP_MAIN/cms/articlelist','id='.$cms['class_id'].'&class_id='.$cms['pid'])}" title="{$cms.name}" class="tree-first cur">{$cms.name}</a>
+						{else /}
+						<a href="{:__URL('SHOP_MAIN/cms/articlelist','id='.$cms['class_id'].'&class_id='.$cms['pid'])}" title="{$cms.name}" class="tree-first">{$cms.name}</a>
+						{/if}
+					</h4>
+
+				</li>
+				{/if}
+				{/foreach}
+			</ul>
+		</div>
+	</div>
+</div>
